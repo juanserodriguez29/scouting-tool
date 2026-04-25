@@ -293,31 +293,48 @@ with st.sidebar:
         except:
             st.success("Datos disponibles")
     else:
-        st.markdown('<div class="aviso">⚠️ No hay datos todavía. Haz clic en <b>Actualizar datos</b> para correr el scraping.</div>', unsafe_allow_html=True)
+        st.markdown('<div class="aviso">⚠️ No hay datos todavía.</div>', unsafe_allow_html=True)
 
     st.markdown("")
 
-    if st.button("🔄 Actualizar datos desde Sofascore", use_container_width=True):
-        with st.spinner("Corriendo el notebook de scraping y entrenamiento... Esto puede tomar varios minutos ⏳"):
-            try:
-                result = subprocess.run(
-                    ["jupyter", "nbconvert", "--to", "notebook", "--execute",
-                     "--ExecutePreprocessor.timeout=1800",
-                     "KMeans_reemplazo_jugadores.ipynb",
-                     "--output", "KMeans_reemplazo_jugadores_ejecutado.ipynb"],
-                    capture_output=True, text=True, timeout=1900
-                )
-                if result.returncode == 0:
-                    st.cache_data.clear()
-                    st.cache_resource.clear()
-                    st.success("✅ Datos actualizados correctamente. Recarga la página.")
-                    st.balloons()
-                else:
-                    st.error(f"Error al ejecutar el notebook:\n{result.stderr[-1000:]}")
-            except subprocess.TimeoutExpired:
-                st.error("El scraping tardó demasiado. Intenta desde el notebook manualmente.")
-            except Exception as e:
-                st.error(f"Error inesperado: {e}")
+    # Detectar si estamos en Streamlit Cloud
+    EN_LA_NUBE = os.environ.get("HOME", "") == "/home/appuser"
+
+    if EN_LA_NUBE:
+        st.markdown("""
+        <div style="background:#0f1f0f;border:1px solid #166534;border-radius:10px;padding:14px 16px;">
+            <div style="font-size:0.78rem;color:#4ADE80;font-weight:600;margin-bottom:6px;">📡 ACTUALIZAR DATOS</div>
+            <div style="font-size:0.78rem;color:#9CA3AF;line-height:1.6;">
+                Corre el notebook localmente y sube los archivos a GitHub:
+                <br><br>
+                <code style="background:#1F2937;padding:2px 6px;border-radius:4px;font-size:0.72rem;">git add data/ models/</code><br><br>
+                <code style="background:#1F2937;padding:2px 6px;border-radius:4px;font-size:0.72rem;">git commit -m "actualizar datos"</code><br><br>
+                <code style="background:#1F2937;padding:2px 6px;border-radius:4px;font-size:0.72rem;">git push</code>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        if st.button("🔄 Actualizar datos desde Sofascore", use_container_width=True):
+            with st.spinner("Corriendo el notebook... Esto puede tomar varios minutos ⏳"):
+                try:
+                    result = subprocess.run(
+                        ["jupyter", "nbconvert", "--to", "notebook", "--execute",
+                         "--ExecutePreprocessor.timeout=1800",
+                         "KMeans_reemplazo_jugadores.ipynb",
+                         "--output", "KMeans_reemplazo_jugadores_ejecutado.ipynb"],
+                        capture_output=True, text=True, timeout=1900
+                    )
+                    if result.returncode == 0:
+                        st.cache_data.clear()
+                        st.cache_resource.clear()
+                        st.success("✅ Datos actualizados. Recarga la página.")
+                        st.balloons()
+                    else:
+                        st.error(f"Error:\n{result.stderr[-1000:]}")
+                except subprocess.TimeoutExpired:
+                    st.error("El scraping tardó demasiado. Intenta desde el notebook.")
+                except Exception as e:
+                    st.error(f"Error inesperado: {e}")
 
     st.markdown("---")
     st.markdown('<span style="font-size:0.75rem;color:#6B7280;">Desarrollado con LanusStats + KMeans</span>', unsafe_allow_html=True)
