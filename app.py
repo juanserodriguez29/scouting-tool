@@ -4,7 +4,6 @@ import numpy as np
 import pickle
 import os
 import time
-import subprocess
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics.pairwise import euclidean_distances
 
@@ -15,7 +14,7 @@ st.set_page_config(
     page_title="Scouting Tool",
     page_icon="⚽",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 # ─────────────────────────────────────────────
@@ -281,72 +280,13 @@ with col_title:
 st.markdown("---")
 
 # ─────────────────────────────────────────────
-# SIDEBAR — ACTUALIZAR DATOS
-# ─────────────────────────────────────────────
-with st.sidebar:
-    st.markdown("### 🔄 Datos")
-
-    if datos_ok:
-        try:
-            df_check = pd.read_csv(DATA_PATH, usecols=['player'])
-            st.success(f"**{len(df_check):,}** jugadores cargados")
-        except:
-            st.success("Datos disponibles")
-    else:
-        st.markdown('<div class="aviso">⚠️ No hay datos todavía.</div>', unsafe_allow_html=True)
-
-    st.markdown("")
-
-    # Detectar si estamos en Streamlit Cloud
-    EN_LA_NUBE = os.environ.get("HOME", "") == "/home/appuser"
-
-    if EN_LA_NUBE:
-        st.markdown("""
-        <div style="background:#0f1f0f;border:1px solid #166534;border-radius:10px;padding:14px 16px;">
-            <div style="font-size:0.78rem;color:#4ADE80;font-weight:600;margin-bottom:6px;">📡 ACTUALIZAR DATOS</div>
-            <div style="font-size:0.78rem;color:#9CA3AF;line-height:1.6;">
-                Corre el notebook localmente y sube los archivos a GitHub:
-                <br><br>
-                <code style="background:#1F2937;padding:2px 6px;border-radius:4px;font-size:0.72rem;">git add data/ models/</code><br><br>
-                <code style="background:#1F2937;padding:2px 6px;border-radius:4px;font-size:0.72rem;">git commit -m "actualizar datos"</code><br><br>
-                <code style="background:#1F2937;padding:2px 6px;border-radius:4px;font-size:0.72rem;">git push</code>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-    else:
-        if st.button("🔄 Actualizar datos desde Sofascore", use_container_width=True):
-            with st.spinner("Corriendo el notebook... Esto puede tomar varios minutos ⏳"):
-                try:
-                    result = subprocess.run(
-                        ["jupyter", "nbconvert", "--to", "notebook", "--execute",
-                         "--ExecutePreprocessor.timeout=1800",
-                         "KMeans_reemplazo_jugadores.ipynb",
-                         "--output", "KMeans_reemplazo_jugadores_ejecutado.ipynb"],
-                        capture_output=True, text=True, timeout=1900
-                    )
-                    if result.returncode == 0:
-                        st.cache_data.clear()
-                        st.cache_resource.clear()
-                        st.success("✅ Datos actualizados. Recarga la página.")
-                        st.balloons()
-                    else:
-                        st.error(f"Error:\n{result.stderr[-1000:]}")
-                except subprocess.TimeoutExpired:
-                    st.error("El scraping tardó demasiado. Intenta desde el notebook.")
-                except Exception as e:
-                    st.error(f"Error inesperado: {e}")
-
-    st.markdown("---")
-    st.markdown('<span style="font-size:0.75rem;color:#6B7280;">Desarrollado con LanusStats + KMeans</span>', unsafe_allow_html=True)
-
-# ─────────────────────────────────────────────
 # MAIN — solo si hay datos
 # ─────────────────────────────────────────────
 if not datos_ok:
     st.markdown("""
     <div style="text-align:center;padding:80px 0;">
         <div style="font-family:'Bebas Neue',sans-serif;font-size:3rem;color:#374151;">SIN DATOS</div>
-        <div style="color:#6B7280;margin-top:8px;">Usa el botón del panel lateral para actualizar los datos desde Sofascore.</div>
+        <div style="color:#6B7280;margin-top:8px;">Los datos aún no están disponibles. Contacta al administrador.</div>
     </div>
     """, unsafe_allow_html=True)
     st.stop()
